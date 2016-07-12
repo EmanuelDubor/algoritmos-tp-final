@@ -231,9 +231,9 @@ class BackpackSolver(Solver):
 
 
 class GRASPSolver(BackpackSolver):
-    def __init__(self, problem, cut_condition, evaluator, greedy_random_solver, refiners, timer=None):
+    def __init__(self, problem, continue_condition, evaluator, greedy_random_solver, refiners, timer=None):
         super().__init__("GRASP", problem, timer)
-        self.cut_condition = cut_condition
+        self.continue_condition = continue_condition
         self.evaluator = evaluator
         self.greedy_random_solver = greedy_random_solver
         self.refiners = refiners
@@ -245,7 +245,7 @@ class GRASPSolver(BackpackSolver):
         self.continue_solving(timer)
 
     def continue_solving(self, timer):
-        while self.cut_condition.should_continue(self) and not timer.is_timeout():
+        while self.continue_condition.should_continue(self) and not timer.is_timeout():
             new_solution = self.make_solution(timer)
             if self.evaluator.better(new_solution, self.solution):
                 self.solution = new_solution
@@ -505,22 +505,16 @@ class BranchAndBoundSolver(BackpackSolver):
             if self.evaluator.equal(node.lower_bound, upper_bound):
                 lower_bound = node.lower_bound
                 break
-            elif self.evaluator.better(lower_bound, node.upper_bound) or \
-                    self.evaluator.equal(lower_bound, node.upper_bound):
-                pass  # Node is worse tan current best
-            elif self.evaluator.equal(node.lower_bound, node.upper_bound):
-                pass  # Node branches aren't relevant any more
             elif self.evaluator.better(node.upper_bound, lower_bound) and \
                     not self.evaluator.better(node.upper_bound, upper_bound):
                 branches = self.branch(node.problem)
                 new_nodes = [self.make_node(problem, timer) for problem in branches]
                 self.storage.push_all(new_nodes)
-            else:
-                print("Uncaugth situation!")
-                print(lower_bound)
-                print(upper_bound)
-                print(node.lower_bound)
-                print(node.upper_bound)
+            #  elif self.evaluator.better(lower_bound, node.upper_bound) or \
+            #         self.evaluator.equal(lower_bound, node.upper_bound):
+            #     pass  # Node is worse tan current best
+            # elif self.evaluator.equal(node.lower_bound, node.upper_bound):
+            #     pass  # Node branches aren't relevant any more
             self.nodes_visited += 1
         self.solution = lower_bound
 
