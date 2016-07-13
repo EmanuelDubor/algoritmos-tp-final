@@ -39,7 +39,7 @@ La implementacion generica de *Branch and Bound* se encuentra en la clase `Branc
 provee de tres metodos que el usuario debe sobreescribir a fin de alcanzar un objeto concreto capaz
 de resolver el problema en cuestion. Estos tres metodos (`upper_bound`, `lower_bound` y `branch`)
 junto con los subcomponentes que el algoritmo recibe al momento de instanciarse son los que determinan
-el orden en el que se genera y explora el el arbol de soluciones.
+el orden en el que se genera y explora el arbol de soluciones.
 
 #### Backtracking
 
