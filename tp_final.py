@@ -153,7 +153,7 @@ class FractionalItem(Item):
         return True
 
 
-class Timer:
+class BasicTimer:
     def __init__(self, timeout=None):
         self.begin = 0
         if timeout is None:
@@ -177,6 +177,15 @@ class Timer:
         return self.begin is not 0
 
 
+class JointTimer:
+    def __init__(self, timer_a, timer_b):
+        self.timer_a = timer_a
+        self.timer_b = timer_b
+
+    def is_timeout(self):
+        return self.timer_a.is_timeout() or self.timer_b.is_timeout()
+
+
 class Solver:
     def __init__(self, title, problem, timer=None):
         self.title = title
@@ -184,20 +193,17 @@ class Solver:
         self.solution = None
         self.total_time = 0
         if timer is None:
-            self.internal_timer = Timer()
+            self.internal_timer = BasicTimer()
         else:
             self.internal_timer = timer
 
     def solve(self, external_timer=None):
+        self.internal_timer.start()
         if external_timer is None:
-            timer = self.internal_timer
-            timer.start()
+            self.do_solve(self.internal_timer)
         else:
-            timer = external_timer
-        self.do_solve(timer)
-        self.total_time = timer.run_time()
-        if timer is self.internal_timer:
-            self.internal_timer.reset()
+            self.do_solve(JointTimer(self.internal_timer, external_timer))
+        self.total_time = self.internal_timer.run_time()
 
     def report(self):
         text = "{title}:\n\tFinished in {run_time} seconds\n\tSolution: {solution}" \
@@ -219,7 +225,7 @@ class BackpackSolver(Solver):
         return base_text + extra_text
 
     def solution_items(self):
-        show_items = 20
+        show_items = 5
         if self.solution is None:
             return []
         else:
@@ -258,7 +264,7 @@ class GRASPSolver(BackpackSolver):
         sol = self.greedy_random_solver.solution
         self.tries += 1
         for refiner in self.refiners:
-            sol = refiner.refine(sol)
+            sol = refiner.refine(sol, timer)
         return sol
 
 
@@ -269,12 +275,12 @@ class LocalSearchRefiner:
 
 
 class ExaustiveSequentialLocalSearchRefiner(LocalSearchRefiner):
-    def refine(self, starting_solution):
+    def refine(self, starting_solution, timer):
         solution = starting_solution
         for variator in self.variators:
             improved = True
             while improved:
-                options = variator.all_variations_of(solution)
+                options = variator.all_variations_of(solution, timer)
                 best_option = self.evaluator.best_of_all(options)
                 improved = self.evaluator.better(best_option, solution)
                 if improved:
@@ -287,9 +293,9 @@ class RandomSequentialLocalSearchRefiner(LocalSearchRefiner):
         super().__init__(evaluator, variators)
         self.cut_condition = cut_condition
         if timer is None:
-            self.timer = Timer()
+            self.internal_timer = BasicTimer()
         else:
-            self.timer = timer
+            self.internal_timer = timer
         self.tries = 0
         self.tries_without_improvement = 0
 
@@ -297,15 +303,16 @@ class RandomSequentialLocalSearchRefiner(LocalSearchRefiner):
         self.tries = 0
         self.tries_without_improvement = 0
 
-    def refine(self, starting_solution):
+    def refine(self, starting_solution, external_timer):
         self.reset()
-        self.timer.start()
+        self.internal_timer.start()
+        timer = JointTimer(self.internal_timer, external_timer)
         best_option = starting_solution
-        while self.cut_condition.should_continue(self) and not self.timer.is_timeout():
+        while self.cut_condition.should_continue(self) and not timer.is_timeout():
             self.tries += 1
             modified = starting_solution
             for variator in self.variators:
-                modified = variator.modify(modified)
+                modified = variator.modify(modified, timer)
             if self.evaluator.better(modified, best_option):
                 best_option = modified
                 self.tries_without_improvement = 0
@@ -395,18 +402,18 @@ class BackpackVariator:
         self.problem = problem
         self.picker = picker
 
-    def modify(self, seed_solution, modification_seed=None):
+    def modify(self, seed_solution, timer, modification_seed=None):
         solution_items = seed_solution.items()
         if modification_seed is None:
-            return self.modify(seed_solution, random.choice(solution_items))
+            return self.modify(seed_solution, timer, random.choice(solution_items))
         else:
             new_solution = seed_solution.remove(modification_seed)
             allowed_items = [item for item in self.problem.all_options if item not in solution_items]
-            new_solution = self.picker.fill(new_solution, allowed_items)
+            new_solution = self.picker.fill(new_solution, allowed_items, timer)
             return new_solution
 
-    def all_variations_of(self, solution):
-        return [self.modify(solution, item_for_removal) for item_for_removal in solution.items()]
+    def all_variations_of(self, solution, timer):
+        return [self.modify(solution, timer, item_for_removal) for item_for_removal in solution.items()]
 
 
 class BackpackGreedyRandomSolver(BackpackSolver):
@@ -422,16 +429,16 @@ class BackpackGreedyRandomSolver(BackpackSolver):
 class BackpackItemPicker:
     def __init__(self, timer=None):
         if timer is None:
-            self.internal_timer = Timer()
+            self.internal_timer = BasicTimer()
         else:
             self.internal_timer = timer
 
-    def fill(self, backpack, available_items, timer=None):
-        if timer is None:
-            self.internal_timer.start()
+    def fill(self, backpack, available_items, external_timer=None):
+        self.internal_timer.start()
+        if external_timer is None:
             return self.do_fill(backpack, available_items, self.internal_timer)
         else:
-            return self.do_fill(backpack, available_items, timer)
+            return self.do_fill(backpack, available_items, JointTimer(self.internal_timer, external_timer))
 
     def do_fill(self, backpack, available_items, timer):
         raise NotImplementedError("Please Implement this method")
@@ -510,7 +517,7 @@ class BranchAndBoundSolver(BackpackSolver):
                 branches = self.branch(node.problem)
                 new_nodes = [self.make_node(problem, timer) for problem in branches]
                 self.storage.push_all(new_nodes)
-            #  elif self.evaluator.better(lower_bound, node.upper_bound) or \
+            # elif self.evaluator.better(lower_bound, node.upper_bound) or \
             #         self.evaluator.equal(lower_bound, node.upper_bound):
             #     pass  # Node is worse tan current best
             # elif self.evaluator.equal(node.lower_bound, node.upper_bound):
@@ -558,7 +565,7 @@ class BackpackBnBSolver(BranchAndBoundSolver):
         improver = BackpackPrimalHeuristic(
             problem,
             BacktrackingItemPicker(self.evaluator),
-            Timer(3)
+            BasicTimer(3)
         )
         solver.solve(timer)
         solution = solver.solution
@@ -612,16 +619,16 @@ class BranchAndBoundNode:
 class PrimalHeuristic:
     def __init__(self, timer=None):
         if timer is None:
-            self.internal_timer = Timer()
+            self.internal_timer = BasicTimer()
         else:
             self.internal_timer = timer
 
-    def improve(self, bound, timer=None):
-        if timer is None:
-            self.internal_timer.start()
+    def improve(self, bound, external_timer=None):
+        self.internal_timer.start()
+        if external_timer is None:
             return self.do_improve(bound, self.internal_timer)
         else:
-            return self.do_improve(bound, timer)
+            return self.do_improve(bound, JointTimer(self.internal_timer, external_timer))
 
     def do_improve(self, bound, timer):
         raise NotImplementedError("Please Implement this method")
@@ -701,11 +708,11 @@ def do_grasp1(backpack_problem):
             ExaustiveSequentialLocalSearchRefiner(
                 BackpackEvaluator(),
                 [
-                    BackpackVariator(backpack_problem, BacktrackingItemPicker(BackpackEvaluator(), Timer(3)))
+                    BackpackVariator(backpack_problem, BacktrackingItemPicker(BackpackEvaluator(), BasicTimer(3)))
                 ]
             )
         ],
-        Timer(300))
+        BasicTimer(300))
     run(solver)
 
 
@@ -719,12 +726,12 @@ def do_grasp2(backpack_problem):
             RandomSequentialLocalSearchRefiner(
                 BackpackEvaluator(),
                 [
-                    BackpackVariator(backpack_problem, BacktrackingItemPicker(BackpackEvaluator(), Timer(3)))
+                    BackpackVariator(backpack_problem, BacktrackingItemPicker(BackpackEvaluator(), BasicTimer(3)))
                 ],
                 ContinueByTries(5).logic_and(ContinueByNoImprovement(3)),
-                Timer(10))
+                BasicTimer(10))
         ],
-        Timer(300))
+        BasicTimer(300))
     run(solver)
 
 
@@ -734,17 +741,17 @@ def do_branch_and_bound1(backpack_problem):
         LiFoStorage(),
         BackpackEvaluator(),
         BackpackYesNoBrancher(MinSelector(key=lambda item: item.value / item.weight)),
-        Timer(300))
+        BasicTimer(300))
     run(solver)
 
 
 def do_branch_and_bound2(backpack_problem):
     solver = BackpackBnBSolver(
         backpack_problem,
-        LiFoStorage(),
+        FiFoStorage(),
         BackpackEvaluator(),
         BackpackYesNoBrancher(MaxSelector(key=lambda item: item.value / item.weight)),
-        Timer(300))
+        BasicTimer(300))
     run(solver)
 
 
@@ -752,7 +759,7 @@ def do_backtracking(backpack_problem):
     solver = BacktrakingSolver(
         backpack_problem,
         BacktrackingItemPicker(BackpackEvaluator()),
-        Timer(300))
+        BasicTimer(300))
     run(solver)
 
 
@@ -761,7 +768,7 @@ def do_greedy(backpack_problem):
         backpack_problem,
         lambda item: item.value / item.weight,
         0,
-        Timer(300))
+        BasicTimer(300))
     run(solver)
 
 
@@ -769,7 +776,7 @@ def do_fractional(backpack_problem):
     solver = BackpackFractionalSolver(
         backpack_problem,
         lambda item: item.value / item.weight,
-        Timer(300))
+        BasicTimer(300))
     run(solver)
 
 
@@ -806,10 +813,10 @@ def main():
     # run_test_file('tests/test_018_1e3.in')
     # run_test_file('tests/test_019_1e3.in')
     # run_test_file('tests/test_020_1e3.in')
-    # run_test_file('tests/test_021_2e3.in')
-    # run_test_file('tests/test_022_2e3.in')
-    # run_test_file('tests/test_023_2e3.in')
-    run_all_tests()
+    run_test_file('tests/test_021_2e3.in')
+    run_test_file('tests/test_022_2e3.in')
+    run_test_file('tests/test_023_2e3.in')
+    # run_all_tests()
 
 
 if __name__ == '__main__':
