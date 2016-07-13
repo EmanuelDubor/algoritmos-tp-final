@@ -787,14 +787,16 @@ def run(solver):
 
 def run_test_file(file_path):
     print("**************** Running file {file} ****************".format(file=file_path))
-    problem = BackpackProblem.from_file(file_path)
-    do_grasp1(problem)
-    do_grasp2(problem)
-    do_branch_and_bound1(problem)
-    do_branch_and_bound2(problem)
-    do_backtracking(problem)
-    # do_greedy(problem)
-    # do_fractional(problem)
+    for _ in range(0,3):
+        problem = BackpackProblem.from_file(file_path)
+        do_grasp1(problem)
+        do_grasp2(problem)
+        do_branch_and_bound1(problem)
+        do_branch_and_bound2(problem)
+        do_backtracking(problem)
+        # do_greedy(problem)
+        # do_fractional(problem)
+        print("**************************************************")
 
 
 def run_all_tests():
@@ -813,10 +815,10 @@ def main():
     # run_test_file('tests/test_018_1e3.in')
     # run_test_file('tests/test_019_1e3.in')
     # run_test_file('tests/test_020_1e3.in')
-    run_test_file('tests/test_021_2e3.in')
-    run_test_file('tests/test_022_2e3.in')
-    run_test_file('tests/test_023_2e3.in')
-    # run_all_tests()
+    # run_test_file('tests/test_021_2e3.in')
+    # run_test_file('tests/test_022_2e3.in')
+    # run_test_file('tests/test_023_2e3.in')
+    run_all_tests()
 
 
 if __name__ == '__main__':

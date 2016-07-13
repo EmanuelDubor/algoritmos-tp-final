@@ -88,14 +88,13 @@ vacia) a un sub-componente encargado de ir llenandola de manera recursiva.
         run(solver)
 
 Este algoritmo concreto parte de soluciones *greedy* aleatorias generadas segun la tasa valor/peso
-de cada item, con un factor de *greedines* de 30% (es decir, cualquier item cuya tasa este a un 30%
-o menos de la mejor tasa posible puede ser incorporado a la solucion que se esta construyendo).
+de cada item, con un factor de *greedines* de 30%; es decir, cualquier item cuya tasa este a un 30%
+o menos de la mejor tasa posible puede ser incorporado a la solucion que se esta construyendo.
 
 Una vez generada la solucion basica el algoritmo aplica sobre ella el unico *refiner* que tiene,
-haciendo una busqueda local exaustiva dentro de la vecindad definida por el *variator*. Luego de
-analizar todas las soluciones vecinas generadas, el algoritmo toma la mejor, genera una nueva
-vecindad y continua el proceso hasta hallar una solucion en la que ningun vecino es mejor que
-la solucion que ya se tiene.
+haciendo una busqueda local exaustiva dentro de la vecindad. Luego de analizar todas las soluciones
+vecinas generadas, el algoritmo toma la mejor, genera una nueva vecindad y continua el proceso hasta
+hallar una solucion en la que ningun vecino es mejor que la solucion que ya se tiene.
 
 Finalmente el algoritmo finaliza luego de haber generado y refinado 100 soluciones iniciales o de
 haber generado y refinado 5 soluciones iniciales sin obtener una mejor que la ya disponible.
@@ -133,7 +132,8 @@ inicial, repitiendo el proceso hasta agotar el tiempo, probar 5 vecinos o probar
 obtener mejoras.
 
 Como condicion de corte de este algoritmo se dan 300 iteraciones o 30 sin mejoras ya que la busqueda
-local es mas rapida pero menos fiable.
+local es mas rapida pero menos fiable dado que su naturaleza aleatoria le permite explorar varias
+veces el mismo vecino.
 
 #### Branch and Bound 1
 
@@ -174,7 +174,7 @@ considerar las consecuencias de llevarlo o no lo antes posible.
 
 ## Resultados
 
-
+[Ver planilla de calculo](https://drive.google.com/open?id=1Strh121v9gK7DO-FMkp2ZQhU-dRjScLAlljs-0kmn_U)
 
 ## Conclusiones
 
@@ -184,8 +184,9 @@ eficiente de todos los considerados siendo que es el unico que logro encontrar s
 ejecucion disponible, incluso para las instancias mas grandes.
 
 En el caso de los algoritmos *Branch and Bound* puede observarse que ambos algoritmos se comportan
-de forma similar, tanto en calidad de soluciones generadas como en efectividad del criterio de
-division de los nodos.
+de forma similar cuanto a la calidad de las soluciones generadas pero difieren significativamente
+en la efectividad del criterio de division de los nodos, haciendo que la primera version (pila con
+peor tasa) explore, en general, varios nodos mas que la otra.
 
 
 
