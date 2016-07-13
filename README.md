@@ -23,7 +23,7 @@ de instanciar el objeto es necesario que el usuario provea una serie de sub-comp
 que determinan el resultado final de la ejecucion.
 
 Los sub-componentes mas relevantes son:
- * `continue_condition`: Este objeto (o composicion de objetos) representa la condicion de  corte del
+ * `continue_condition`: Este objeto (o composicion de objetos) representa la condicion de corte del
  algoritmo. Los criterios atomicos soportados son `ContinueByTries` y `ContinueByNoImprovement` asi
  como cualquier expresion logica que los combine.
  * `greedy_random_solver`: Este objeto es el encargado de proveer las soluciones iniciales sobre las
@@ -180,11 +180,11 @@ considerar las consecuencias de llevarlo o no lo antes posible.
 
 Puede concluirse que el algoritmo GRASP en su segunda version (vecindad aleatoria) es el mas
 eficiente de todos los considerados siendo que es el unico que logro encontrar soluciones optimas
-(o mas optimas que los demas algoritmos) de manera consistente y sin utilizar todo el tiempo de
+(o mejores que los demas algoritmos) de manera consistente y sin utilizar todo el tiempo de
 ejecucion disponible, incluso para las instancias mas grandes.
 
 En el caso de los algoritmos *Branch and Bound* puede observarse que ambos algoritmos se comportan
-de forma similar cuanto a la calidad de las soluciones generadas pero difieren significativamente
+de forma similar en cuanto a la calidad de las soluciones generadas pero difieren significativamente
 en la efectividad del criterio de division de los nodos, haciendo que la primera version (pila con
 peor tasa) explore, en general, varios nodos mas que la otra.
 
