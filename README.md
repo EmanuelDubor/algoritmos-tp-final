@@ -107,7 +107,7 @@ llevar a generar y analizar muchisimas soluciones.
     def do_grasp2(backpack_problem):
         solver = GRASPSolver(
             backpack_problem,
-            ContinueByTries(300).logic_and(ContinueByNoImprovement(30)),
+            ContinueByTries(100).logic_and(ContinueByNoImprovement(30)),
             BackpackEvaluator(),
             BackpackGreedyRandomSolver(backpack_problem, sorting_key=lambda item: item.value / item.weight, greediness=0.3),
             [
@@ -182,6 +182,20 @@ Puede concluirse que el algoritmo GRASP en su segunda version (vecindad aleatori
 eficiente de todos los considerados siendo que es el unico que logro encontrar soluciones optimas
 (o mejores que los demas algoritmos) de manera consistente y sin utilizar todo el tiempo de
 ejecucion disponible, incluso para las instancias mas grandes.
+
+Se interrumpio la serie de ejecuciones de ajuste de la condicion de corte para la primera
+configuracion de GRASP al observar que, para las instancias mas grandes, el algoritmo solo llega a
+refinar una unica solucion y a pesar de ello, generalmente encuentra soluciones de gran calidad.
+Claramente la calidad de las soluciones que esta variente provee se debe a la busqueda local
+exaustiva que realiza y no a la cantidad de intentos.
+
+En cuanto a la condicion de corte del segundo algoritmo GRASP las ejecuciones de ajuste revelaron
+que la cantidad de intentos sin mejora es la principal responsable del tiempo de ejecucion del
+algoritmo, siendo comun que esta sea la condicion que determina el final de la ejecucion. En
+consecuencia, esta medida (cantidad de intentos sin mejora) tiene un impacto directo en la calidad
+de las soluciones que el algoritmo produce. Las pruebas practicas demostraron que, para las
+instancias mas grandes del problema, la condicion de corte optima es 100 intentos totales o 30
+intentos sin mejora.
 
 En el caso de los algoritmos *Branch and Bound* puede observarse que ambos algoritmos se comportan
 de forma similar en cuanto a la calidad de las soluciones generadas pero difieren significativamente

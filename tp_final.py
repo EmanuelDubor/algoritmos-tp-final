@@ -267,6 +267,12 @@ class GRASPSolver(BackpackSolver):
             sol = refiner.refine(sol, timer)
         return sol
 
+    def report(self):
+        base = super().report()
+        extra = "\n\tTotal tries: {tries}\n\tTries without improvemente: {improve}" \
+            .format(tries=self.tries, improve=self.tries_without_improvement)
+        return base + extra
+
 
 class LocalSearchRefiner:
     def __init__(self, evaluator, variators):
@@ -703,12 +709,22 @@ def do_grasp1(backpack_problem):
         backpack_problem,
         ContinueByTries(100).logic_and(ContinueByNoImprovement(5)),
         BackpackEvaluator(),
-        BackpackGreedyRandomSolver(backpack_problem, sorting_key=lambda item: item.value / item.weight, greediness=0.3),
+        BackpackGreedyRandomSolver(
+            backpack_problem,
+            sorting_key=lambda item: item.value / item.weight,
+            greediness=0.3
+        ),
         [
             ExaustiveSequentialLocalSearchRefiner(
                 BackpackEvaluator(),
                 [
-                    BackpackVariator(backpack_problem, BacktrackingItemPicker(BackpackEvaluator(), BasicTimer(3)))
+                    BackpackVariator(
+                        backpack_problem,
+                        BacktrackingItemPicker(
+                            BackpackEvaluator(),
+                            BasicTimer(3)
+                        )
+                    )
                 ]
             )
         ],
@@ -719,17 +735,28 @@ def do_grasp1(backpack_problem):
 def do_grasp2(backpack_problem):
     solver = GRASPSolver(
         backpack_problem,
-        ContinueByTries(300).logic_and(ContinueByNoImprovement(30)),
+        ContinueByTries(100).logic_and(ContinueByNoImprovement(30)),
         BackpackEvaluator(),
-        BackpackGreedyRandomSolver(backpack_problem, sorting_key=lambda item: item.value / item.weight, greediness=0.3),
+        BackpackGreedyRandomSolver(
+            backpack_problem,
+            sorting_key=lambda item: item.value / item.weight,
+            greediness=0.3
+        ),
         [
             RandomSequentialLocalSearchRefiner(
                 BackpackEvaluator(),
                 [
-                    BackpackVariator(backpack_problem, BacktrackingItemPicker(BackpackEvaluator(), BasicTimer(3)))
+                    BackpackVariator(
+                        backpack_problem,
+                        BacktrackingItemPicker(
+                            BackpackEvaluator(),
+                            BasicTimer(3)
+                        )
+                    )
                 ],
                 ContinueByTries(5).logic_and(ContinueByNoImprovement(3)),
-                BasicTimer(10))
+                BasicTimer(10)
+            )
         ],
         BasicTimer(300))
     run(solver)
@@ -787,13 +814,13 @@ def run(solver):
 
 def run_test_file(file_path):
     print("**************** Running file {file} ****************".format(file=file_path))
-    for _ in range(0,3):
+    for _ in range(0, 1):
         problem = BackpackProblem.from_file(file_path)
-        do_grasp1(problem)
+        # do_grasp1(problem)
         do_grasp2(problem)
-        do_branch_and_bound1(problem)
-        do_branch_and_bound2(problem)
-        do_backtracking(problem)
+        # do_branch_and_bound1(problem)
+        # do_branch_and_bound2(problem)
+        # do_backtracking(problem)
         # do_greedy(problem)
         # do_fractional(problem)
         print("**************************************************")
@@ -817,8 +844,8 @@ def main():
     # run_test_file('tests/test_020_1e3.in')
     # run_test_file('tests/test_021_2e3.in')
     # run_test_file('tests/test_022_2e3.in')
-    # run_test_file('tests/test_023_2e3.in')
-    run_all_tests()
+    run_test_file('tests/test_023_2e3.in')
+    # run_all_tests()
 
 
 if __name__ == '__main__':
